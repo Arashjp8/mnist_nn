@@ -1,0 +1,81 @@
+---
+title: "MNIST Neural Network Example"
+format: html
+---
+
+## Custom Neural Network for MNIST
+
+In this example, we'll implement a custom neural network using numpy to classify MNIST digits. We'll load the MNIST dataset, initialize the network's weights and biases, perform forward and backward propagation, and train the network over multiple epochs. 
+
+```{python}
+import numpy as np
+from matplotlib import pyplot as plt
+from data import get_mnist
+
+# Initialize variables for the neural network
+w_i_h = np.random.uniform(-0.5, 0.5, (20, 784))  # Weights from input to hidden layer
+w_h_o = np.random.uniform(-0.5, 0.5, (10, 20))  # Weights from hidden to output layer
+b_i_h = np.zeros((20, 1))  # Bias for hidden layer
+b_h_o = np.zeros((10, 1))  # Bias for output layer
+
+# Load MNIST dataset
+images, labels = get_mnist()
+
+# Training parameters
+learn_rate = 0.01
+nr_correct = 0
+epochs = 3
+
+# Training loop
+for epoch in range(epochs):
+    # Going through each image and label pair
+    for img, l in zip(images, labels):
+        # Reshape image and label
+        img.shape += (1,)
+        l.shape += (1,)
+
+        # Forward propagation (input -> hidden layer)
+        h_pre = (w_i_h @ img) + b_i_h
+        h = 1 / (1 + np.exp(-h_pre))  # Sigmoid activation
+        # Forward propagation (hidden -> output layer)
+        o_pre = (w_h_o @ h) + b_h_o
+        o = 1 / (1 + np.exp(-o_pre))  # Sigmoid activation
+
+        # Cost (error) calculation
+        error = 1 / len(o) * np.sum((o - l) ** 2, axis=0)
+        # Count correct predictions
+        nr_correct += np.sum(np.argmax(o, axis=0) == np.argmax(l, axis=0))
+
+        # Backward propagation (output -> hidden layer)
+        delta_o = o - l
+        w_h_o += -learn_rate * delta_o @ np.transpose(h)
+        b_h_o += -learn_rate * delta_o
+        # Backward propagation (hidden -> input layer)
+        delta_h = np.transpose(w_h_o) @ delta_o * (h * (1 - h))
+        w_i_h += -learn_rate * delta_h @ np.transpose(img)
+        b_i_h += -learn_rate * delta_h
+
+    # Print accuracy for the current epoch
+    print(f"Epoch: {epoch + 1}/{epochs}")
+    print(f"Accuracy: {round((nr_correct / images.shape[0]) * 100, 2)}%")
+    nr_correct = 0
+```
+
+# Test the model with a predefined index
+
+```{python}
+index = 1004  # Choose an index, for example
+img = images[index]
+plt.imshow(img.reshape(28, 28), cmap="Greys")
+
+img.shape += (1,)
+# Forward propagation input -> hidden
+h_pre = b_i_h + w_i_h @ img.reshape(784, 1)
+h = 1 / (1 + np.exp(-h_pre))
+# Forward propagation hidden -> output
+o_pre = b_h_o + w_h_o @ h
+o = 1 / (1 + np.exp(-o_pre))
+
+plt.title(f"It's a {o.argmax()} :)")
+plt.show()
+```
